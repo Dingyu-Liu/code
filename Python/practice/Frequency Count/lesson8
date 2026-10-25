@@ -1,0 +1,8 @@
+try:
+    num = int(input("请输入一个数字:"))
+    num2 = int(input("输入第二个数字:"))
+    print(num/num2)
+except ValueError:
+    print("输入的不是数字")
+except ZeroDivisionError:
+    print("不能除以零")

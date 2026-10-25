@@ -1,0 +1,7 @@
+[
+  {"name": "张三", "score": 85, "class": "1班"},
+  {"name": "李四", "score": 52, "class": "1班"},
+  {"name": "王五", "score": 67, "class": "2班"},
+  {"name": "赵六", "score": 41, "class": "2班"},
+  {"name": "钱七", "score": 90, "class": "1班"}
+]

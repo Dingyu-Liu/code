@@ -1,16 +1,24 @@
-text = input("请输入文本：")
-words = text.split()
-count ={}
-values=[]
-for word in words:
-    count[word]=count.get(word,0)+1
-print("全部出现的单词和字数为：")
-print(count)
-
-for key,value in count.items():
+import random
+secret=random.randint(1,100)
+def check_guess(guess):
     
-    values.append((value,key))
-values.sort(reverse=True)
-print("出现次数前十名的单词及其次数：")
-for value,key in values[:10]:
-    print(key,"出现",value,"次")
+    if secret > guess:
+        return "low"
+    elif secret < guess:
+        return "high"
+    else:
+        return "correct"
+
+
+while True:
+ num =int(input("请输入数字:"))
+ result=check_guess(num)
+ if result =="low":
+        print("猜低了")
+        
+ elif result =="high":
+        print("猜高了")
+        
+ else:
+        break
+print("猜对了")
