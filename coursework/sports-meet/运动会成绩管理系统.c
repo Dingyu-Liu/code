@@ -1,468 +1,336 @@
+/*
+ * è¿åŠ¨ä¼šåˆ†æ•°ç»Ÿè®¡ç³»ç»Ÿ â€”â€” ä¼˜åŒ–ç‰ˆ
+ * åŠŸèƒ½ä¸åŸç‰ˆ 100% ä¸€è‡´ï¼Œä»£ç é‡å¤§å¹…ç²¾ç®€ã€‚
+ *
+ * ä¸»è¦ä¼˜åŒ–ï¼š
+ *   1. OUT å®ç»Ÿä¸€"å±å¹• + æ–‡ä»¶"åŒè¾“å‡ºï¼Œæ¶ˆé™¤æˆå¯¹ printf/fprintf
+ *   2. strstr æ›¿ä»£æ‰‹å†™æ¨¡ç³ŠåŒ¹é… bijiaoï¼ˆè¡Œä¸ºç­‰ä»·ï¼Œè¿”å›é¦–æ¬¡åŒ¹é… 1-based ä½ç½®ï¼‰
+ *   3. gainchar ä¿®å¤ A[max] è¶Šç•Œå†™ï¼Œé€»è¾‘ç®€åŒ–
+ *   4. jianyan / jianyan2 åˆå¹¶ä¸º check()
+ *   5. æŸ¥è¯¢/æ˜¾ç¤º/æ’åºæŠ½æˆç‹¬ç«‹å‡½æ•°ï¼Œä¸»å¾ªç¯ä¸å†å †ç Œ
+ *   6. è·¨å¹³å°ï¼šWindows ç”¨ conio.h/getchï¼Œå…¶å®ƒå¹³å°ç”¨ getchar
+ *
+ * ç¼–è¯‘ï¼šgcc -std=c99 -Wall sports_score.c -o sports
+ */
 #include <stdio.h>
 #include <stdlib.h>
-#define NAME 17 //×Ö·ûÊı
+#include <string.h>
+#ifdef _WIN32
+#include <conio.h>
+#define PAUSE() getch()
+#define CLS()   system("cls")
+#else
+#define PAUSE() getchar()
+#define CLS()   system("clear")
+#endif
+
+#define NAME 17
 #define NUMU 20
 #define NUMP 20
-#define H 5 //Ã¿Ò»ĞĞÊä³öµÄÑ§Ğ£»òÏîÄ¿Êı
-  
-//ÔËĞĞ±¾³ÌĞòĞëÖª£º
-//´úÂë°Ù·ÖÖ®°ÙÍêÕû£¬¿Ï¶¨ÄÜÔËĞĞ³É¹¦! Èç¹û²»ÄÜÔËĞĞ£¬¿Ï¶¨ÊÇÄãµÄÈí¼şÏÂÔØ»òÕßÅäÖÃÓĞÎÊÌâ£¡£¡! ÇĞ¼Ç~~~
-//ÔËĞĞÇ°Òª½âÑ¹ÎÒ·¢¸øÄãµÄÑ¹Ëõ°ü£¬È»ºó´ò¿ªÎÄ¼ş¼ĞÏÂµÄÔ´³ÌĞòÔËĞĞ¡£ 
-//ÇĞ²»¿É×Ô¼º¸´ÖÆÕ³ÌùÒ»·İ£¬¸´ÖÆÕ³Ìù¿Ï¶¨»á±¨´í£¡£¡£¡ÒòÎª³ıÁËÔ´´úÂë»¹ÓĞÆäËû´æ´¢ÎÄ¼ş¶¼ÔÚÎÒ·¢ÄãµÄÑ¹Ëõ°üÏÂ¡£
-// Dev ºÍ VS ¶¼ÄÜ³É¹¦ÔËĞĞ¡£ÓÃ VS Ê±³ıÁË´ò¿ªÔ´´úÂë£¬»¹Òª´ò¿ªÎÄ¼ş¼ĞÀïÃæµÄ .exe ¿ÉÖ´ĞĞÎÄ¼ş½øĞĞÔËĞĞ!! 
- 
-FILE *fp;
-const char wenjian[] = "system.txt"; //ÎÄ¼şÃüÃû
-typedef struct link
+#define H    5
+#define DB   "system.txt"
+
+/* fp éç©ºæ—¶åŒæ—¶å†™æ–‡ä»¶ï¼Œå¦åˆ™åªè¾“å‡ºåˆ°å±å¹• */
+static FILE *fp;
+#define OUT(...) do { printf(__VA_ARGS__); if (fp) fprintf(fp, __VA_ARGS__); } while (0)
+
+typedef struct { int gram[3][NUMP]; int sum[3]; } Link;
+typedef struct {
+    int  b[4];                  /* å­¦æ ¡æ•° / é¡¹ç›®æ•° / ç”·ç”Ÿé¡¹ç›®æ•° / å¥³ç”Ÿé¡¹ç›®æ•° */
+    char school[NUMU][NAME];
+    int  sex[NUMU];
+    Link spot[NUMU];
+    int  junction[NUMP];
+    int  count[NUMP][5];
+    char game[NUMP][NAME];
+} Data;
+
+static const int    SC[2][5] = {{5,3,2,0,0}, {7,5,3,2,1}};
+static const char  *SEX[2]   = {"ç”·", "å¥³"};
+static const char  *CAT[3]   = {"ç”·å­", "å¥³å­", "å­¦æ ¡"};
+static const char *const PUNC[] = {"ï¼","ã€‚","ï¼Ÿ","ã€Š","ã€‹","ï¼Œ","ï½›","ï½","ï¼ˆ","ï¼‰","ï¿¥","â€˜","â€™","ï¼š","ï¼›","â€”","â€","â€œ","ã€","Â·","~",NULL};
+static const char *const SCH[]  = {"å¤§å­¦","å­¦é™¢","åä¾¨","æ ¡åŒº","æ”¿æ³•","ç®¡ç†","ç»æµ","ç§‘å­¦","ç†å·¥","ç§‘æŠ€","åŒ»ç§‘","åŒ»è¯","è´¢ç»","æŠ€æœ¯","èŒä¸š","å¸ˆèŒƒ","ä¸­å›½","æµ·æ´‹","çŸ³æ²¹","æ°‘æ—","å¤–è´¸","åˆ†æ ¡","å»ºç­‘","å·¥ä¸š","å¤–è¯­",NULL};
+static const char *const PRG[]  = {"è·³","æ»‘","å†°","å°„","éª‘","å‡»","è·‘","æ‹‰","é“","çƒ","ä¸¾","ç±³","æ°´","æ‘”","çˆ¬","æ³³","æ‹”","è½¦","è¸©","æ¥","åˆ’","ä½“","ç”°","äºº","èµ›",NULL};
+
+/* ä¸åŸ bijiao ç­‰ä»·ï¼šå­ä¸² key åœ¨ s ä¸­é¦–æ¬¡å‡ºç°çš„ 1-based ä½ç½®ï¼Œæœªæ‰¾åˆ°è¿”å› 0 */
+static int find_sub(const char *s, const char *key)
 {
-    int gram[3][NUMP];//gram[0]´æÄĞÉúÏîÄ¿£¬gram[1]´æÅ®ÉúÏîÄ¿,gram[2]´æÕâ¸öÑ§Ğ£ÖĞÄĞÅ®ÔÚ´ËÏîÄ¿ÉÏµÄ×Ü·Ö
-    int sum[3];//sum[0]´æÄĞÉú×ÜµÃ·Ö£¬sum[1]´æÅ®Éú×ÜµÃ·Ö£¬sum[2]´æÑ§Ğ£×ÜµÃ·Ö
-}link; 
-typedef struct MESSAGE
-{
-    int b[4]; // b[0-3]ÒÀ´ÎÎª(Ñ§Ğ£¸öÊı£¬ÏîÄ¿¸öÊı£¬ÄĞÉúÏîÄ¿¸öÊı£¬Å®ÉúÏîÄ¿¸öÊı
-    char xuexiao[NUMU][NAME];//Ñ§Ğ£Ãû³Æ
-    int sex[NUMU];//ĞÔ±ğ£¨Çø·ÖÄĞÅ®×ÓÏîÄ¿£©
-    struct link spot[NUMU];//Ìí¼Ó»ı·ÖÇé¿ö
-    int junction[NUMP];//¾ö¶¨È¡Ç°Èı»òÇ°Îå
-    int count[NUMP][5];//ÏîÄ¿µÄÑ§Ğ£±àºÅ
-    char xiangmu[NUMP][NAME];//ÏîÄ¿Ãû³Æ
-} MESSAGE;
- 
-int junction[][5] = {{5, 3, 2, 0, 0}, {7, 5, 3, 2, 1}};
-char sex[][3] = {"ÄĞ", "Å®"};
-char fenlei[][5] = {"ÄĞ×Ó", "Å®×Ó", "Ñ§Ğ£"};
-int gainint(int *p, int a, int b);//ÊäÈëÊı¾İp£¬ÊäÈëÊı¾İÏÂÏŞa£¬ÊäÈëÊı¾İÉÏÏŞb
-int gainchar(char A[], int min, int max);//ÊäÈë×Ö·ûA£¬ÊäÈë×Ö·ûÊıÁ¿ÏÂÏŞmin£¬ÊäÈë×Ö·ûÊıÁ¿ÉÏÏŞmax
-int bijiao(char a[], char b[]);//µÈ´ı½øĞĞÆ¥Åä²éÕÒµÄ×Ö·û´®a£¬½øĞĞÆ¥Åä²éÕÒµÄ¹Ø¼ü×Öb
-void record(char school[][NAME], char game[][NAME], int b[], MESSAGE *temp);
-int xianshi();
-int jianyan(char b[], int T);//¼ìÑé×Ö·ûÊÇ·ñ·ûºÏÒªÇó,T=0¼ìÑéµ±Ç°×Ö·û´®ÊÇ·ñÈ«Îªºº×Ö T=1¼ìÑéÑ§Ğ£,T=2¼ìÑé±ÈÈü
-int jianyan2(char b[], int T);
-void paixu(MESSAGE *temp, int select,FILE *fp);
- 
-char key[][3] = {"£¡", "¡£", "£¿", "¡¶", "¡·", "£¬", "£û", "£ı", "£¨", "£©", "£¤", "¡®", "¡¯", "£º", "£»", "¡ª", "¡±", "¡°", "¡¢", "¡¤", "~", "\0"};
-char school[][5] = {"´óÑ§", "Ñ§Ôº", "»ªÇÈ", "Ğ£Çø", "Õş·¨", "¹ÜÀí", "¾­¼Ã", "¿ÆÑ§", "Àí¹¤", "¿Æ¼¼", "Ò½¿Æ", "Ò½Ò©", "²Æ¾­", "¼¼Êõ", "Ö°Òµ", "Ê¦·¶", "ÖĞ¹ú", "º£Ñó", "Ê¯ÓÍ", "Ãñ×å", "ÍâÃ³", "·ÖĞ£", "½¨Öş", "¹¤Òµ", "ÍâÓï", "\0"};
-char program[][3] = {"Ìø", "»¬", "±ù", "Éä", "Æï", "»÷", "ÅÜ", "À­", "µÀ", "Çò", "¾Ù", "Ã×", "Ë®", "Ë¤", "ÅÀ", "Ó¾", "°Î", "³µ", "²È", "½Ó", "»®", "Ìå", "Ìï", "ÈË", "Èü", "\0"};
- 
-int read(MESSAGE *message,FILE *fp)
-{
-    if ((fp = fopen(wenjian, "r")) == NULL)
-    {
-        if ((fp = fopen(wenjian, "w+")) != NULL)
-        {
-            fclose(fp);
-            if ((fp = fopen(wenjian, "r")) == NULL)
-                return printf("ÎÄ¼ş¶ÁÈ¡Ê§°Ü!\n");
-        }
-    }
-    fread(message, sizeof(MESSAGE), 1, fp);
-    fclose(fp);
-    return 0;
+    const char *p = strstr(s, key);
+    return p ? (int)(p - s) + 1 : 0;
 }
- 
- 
-int main()
+
+/* è¯» [lo,hi] çš„æ•´æ•°ï¼›éæ³•è¾“å…¥æŒ‰è¶Šç•Œé‡æ–°æç¤º */
+static int get_int(int *p, int lo, int hi)
 {
-	system("color f0"); 
-    MESSAGE SG = {0}, *message = &SG;
-    int i, j, k, select, choice, now, next;
- 
-    if (read(message,fp))
-    {
-        printf("Çë°´ÈÎÒâ¼ü½øĞĞÏÂÒ»²½\n");
-        getch();
-    }
- 
-    do
-    {
-        system("cls");
-        select = xianshi();
-        if (select == 1)
-            record(message->xuexiao, message->xiangmu, message->b, message);
-        else if (message->b[0])
-        {
-            if (select >= 2 && select <= 4)
-            {
-                fp = fopen(wenjian, "a+");
-                paixu(message, select - 2,fp);
-                fclose(fp);
-            }
-                
-            else if (select == 5)
-            {
-                fp = fopen(wenjian, "a+");
-                for (k = 0; k < message->b[0]; k++) //Êä³öÑ§Ğ£Ãû³ÆÑ¡Ïî Ã¿Îå¸öÒ»ĞĞ
-                    printf("%d:%-13s%c", k + 1, message->xuexiao[k], (k + 1) % H ? ' ' : '\n');
-                printf("\nÊäÈëÑ§Ğ£Ç°µÄ±àºÅ[1,%d]:", message->b[0]);
-                choice = gainint(&choice, 1, message->b[0]) - 1;
-                next = 0;
-                while (next < message->b[1])
-                {
-                    now = next;
-                    if ((next + H) < (message->b[1]))
-                        next = next + H;
-                    else
-                        next = message->b[1];
- 
-                    for (i = now; i < next; i++)
-                    {
-                        fprintf(fp,"(%s-%d)%-8s ", sex[message->sex[i]], message->junction[i], message->xiangmu[i]);
-                        printf("(%s-%d)%-8s ", sex[message->sex[i]], message->junction[i], message->xiangmu[i]);
-                    } //Êä³öÏîÄ¿ĞÅÏ¢
- 
-                    fprintf(fp,"\n");
-                    printf("\n");
-                    for (j = 0; j < 3; j++)
-                    {
-                        fprintf(fp,"%-s:  ", fenlei[j]);
-                        printf("%-s:  ", fenlei[j]);
-                        for (k = now; k < next; k++)
-                        {
-                            if (j == message->sex[k] || j == 2)
-                            {
-                                fprintf(fp,"%02d·Ö    \t", (message->spot + choice)->gram[j][k]);
-                                printf("%02d·Ö    \t", (message->spot + choice)->gram[j][k]);
-                            }
-                            else
-                            {
-                                fprintf(fp,"******  \t");
-                                printf("******  \t");
-                            }
- 
-                        }
-                        fprintf(fp,"\n");
-                        printf("\n");
-                    }
-                    fprintf(fp,"\n");
-                    printf("\n");
-                }
-                fclose(fp);
-            }
-            else if (select == 6)
-            {
-                fp = fopen(wenjian, "a+");
-                for (i = 0; i < message->b[1]; i++)
-                {
-                    printf("\t\tµÚ%d¸ö±ÈÈüÏîÄ¿: %-13s<%s×Ó> Ö»Â¼ÈëÇ°%dÃû\n", i + 1, message->xiangmu[i], sex[message->sex[i]], message->junction[i]);
-                    fprintf(fp,"\t\tµÚ%d¸ö±ÈÈüÏîÄ¿: %-13s<%s×Ó> Ö»Â¼ÈëÇ°%dÃû\n", i + 1, message->xiangmu[i], sex[message->sex[i]], message->junction[i]);
-                    for (j = 0; j < message->junction[i]; j++)
-                    {
-                        fprintf(fp,"\tµÚ%dÃû:%-13s%02d·Ö", j + 1, message->xuexiao[message->count[i][j]], junction[(message->junction[i]) / 4][j]);
-                        printf("\tµÚ%dÃû:%-13s%02d·Ö", j + 1, message->xuexiao[message->count[i][j]], junction[(message->junction[i]) / 4][j]);
-                    }
-                    printf("\n\n");
-                    fprintf(fp,"\n\n");
-                }
-                fclose(fp);
-            }
-            else if (select == 9)
-            {
-                printf("È·ÈÏÇå¿ÕÇë°´1 ·ñÔòÇë°´0:");
-                if (gainint(&choice, 0, 1))
-                    for (k = 0; k < NUMP; k++) //¶ÔÉêÇë³öÀ´µÄ½á¹¹ÌåÖĞµÄËùÓĞÏîÄ¿³õÊ¼»¯
-                        for (i = 0; i < 3; i++)
-                        {
-                            (message->spot + k)->sum[i] = 0; // sum[]³õÊ¼»¯
-                            for (j = 0; j < NUMP; j++)
-                                (message->spot + k)->gram[i][j] = 0; //ÏîÄ¿³õÊ¼»¯
-                            message->b[i] = 0;
-                        }
-                /*if (write(message,fp))
-                    return 0;*/
-                read(message,fp);
-            }
-            else if(select==7)
-            {
-                system(wenjian);
-            }
-        }
-        printf("\nÇë°´ÈÎÒâ¼ü¼ÌĞø¡­\n");
-        getch();
-    } while (select != 8);
-    
-    return 0;
-}
- 
-int bijiao(char a[], char b[])
-{
-    int i = 0, j = 0;
-    while (a[i] && b[j])
-        if (a[i++] == b[j])
-        {
-            j++;
-        }
-        else
-        {
-            i = i - j;
-            j = 0;
-        }
-    if (b[j] == '\0')
-        return i - j + 1;//ÈôÆ¥Åä³É¹¦Ôò·µ»ØµÚÒ»´ÎÆ¥Åä³É¹¦µÄÏÂ±ê
-    else
-        return 0;
-}
- 
-int gainint(int *p, int a, int b)
-{
-    do
-    {
+    int c;
+    do {
         *p = 0;
-        scanf("%d", p);
-        while (getchar() != '\n')
-            ;
-        if (*p > b || *p < a)
-            printf("ÊäÈëÓĞÎó,ÇëÖØĞÂÊäÈë[%d--%d]:", a, b);
-    } while (*p > b || *p < a);
-    return *p;//·µ»ØÊäÈëÊı¾İ
+        if (scanf("%d", p) != 1) *p = lo - 1;
+        while ((c = getchar()) != '\n' && c != EOF) ;
+        if (*p < lo || *p > hi) printf("è¾“å…¥æœ‰è¯¯,è¯·é‡æ–°è¾“å…¥[%d--%d]:", lo, hi);
+    } while (*p < lo || *p > hi);
+    return *p;
 }
- 
-int gainchar(char A[], int min, int max)
+
+/* è¯»å­—ç¬¦ä¸²ï¼Œæœ€å¤š hi å­—èŠ‚(ç•™1å­—èŠ‚ç»™'\0'å®é™…å­˜ hi-1 ä¸ª)ï¼Œè¶…é•¿ä¸¢å¼ƒæœ¬è¡Œ */
+static int get_str(char *s, int lo, int hi)
 {
-    int B, C;
-    do
-    {
-        A[max] = B = C = 0;
-        while ((A[B++] = getchar()) != '\n' && B < max)
-            ;
- 
-        if (A[B - 1] != '\n')
-            while (getchar() != '\n' && ++C)
-                ;//Èç¹ûÊäÈëµÄ×îºóÒ»¸ö×Ö·û²»ÊÇ»Ø³µ£¬ÄÇÃ´½«Ê£Óà³¤¶È¼Æµ½C
- 
+    int n, extra, c = 0;
+    do {
+        n = extra = 0;
+        while (n < hi && (c = getchar()) != '\n' && c != EOF) s[n++] = (char)c;
+        if (c != '\n')
+            while ((c = getchar()) != '\n' && c != EOF) extra++;
         else
-            A[--B] = 0;//·ñÔò°ÑÂ¼½øÊı×éµÄ»Ø³µÉ¾µô£¬¼´Îª³É¹¦ÊäÈë×Ö·û¡£
- 
-        if (C || B && B < min)
-            printf("Â¼ÈëµÄ×Ö·û´®³¤¶ÈÎª%d×Ö½Ú\nÖ»Â¼Èë(%d--%d)¸ö×Ö·û!\n", B + C, min, max);
-    } while (C || B < min);
-    return B;//·µ»ØÂ¼Èë³É¹¦×Ö·ûÊıÁ¿
+            s[n] = '\0';
+        if (extra || n < lo)
+            printf("å½•å…¥çš„å­—ç¬¦ä¸²é•¿åº¦ä¸º%då­—èŠ‚\nåªå½•å…¥(%d--%d)ä¸ªå­—ç¬¦!\n", n + extra, lo, hi);
+    } while (extra || n < lo);
+    return n;
 }
- 
-int jianyan(char b[], int T) //¼ìÑéb[]ÊÇ·ñ·ûºÏÊµ¼Ê
+
+/* mode 0: å…¨ä¸­æ–‡+æ— ä¸­æ–‡æ ‡ç‚¹; 1: å­¦æ ¡åæ ¡éªŒ; 2: é¡¹ç›®åæ ¡éªŒ */
+static int check(const char *s, int mode)
 {
-    int d = 0, i, LEN = -1, F;
-    while (b[++LEN])
-        ;
-    for (i = 0; i < LEN; i++)
-        if (b[i] > 0) //ºº×Öascll±àÂëÃ¿Ò»¸ö×Ö½ÚÎª¸ºÊı
-            return printf("ÊäÈëÖĞº¬ÓĞ·ÇÖĞÎÄ×Ö·û!");
-    for (i = 0; key[i][0]; i++)
-    {
-        F = bijiao(b, key[i]); //Æ¥ÅäÖĞÎÄ±êµã·ûºÅ
-        if (F && F % 2)
-            return printf("ÊäÈëÖĞº¬ÓĞ·Çºº×ÖÖĞÎÄ×Ö·û!");
+    int i, hit, len = (int)strlen(s);
+    for (i = 0; i < len; ++i)
+        if ((unsigned char)s[i] < 0x80) { printf("è¾“å…¥ä¸­å«æœ‰éä¸­æ–‡å­—ç¬¦!"); return 1; }
+    for (i = 0; PUNC[i]; ++i)
+        if (find_sub(s, PUNC[i]) % 2) { printf("è¾“å…¥ä¸­å«æœ‰éæ±‰å­—ä¸­æ–‡å­—ç¬¦!"); return 1; }
+    if (mode == 1) {
+        for (i = 0, hit = 0; SCH[i]; ++i) if (find_sub(s, SCH[i]) % 2) hit = 1;
+        if (!hit) { printf("æŸ¥æ— æ­¤æ ¡~å­¦æ ¡åç§°è¾“å…¥å¯èƒ½å­˜åœ¨é”™è¯¯!"); return 1; }
     }
-    if (T == 1) //¼ìÑéÑ§Ğ£µÄÃû³Æ
-    {
-        for (i = 0; school[i][0]; i++)
-        {
-            F = bijiao(b, school[i]);
-            if (F && F % 2)
-                d++;
-        }
-        if (!d)
-            return printf("²éÎŞ´ËĞ£~Ñ§Ğ£Ãû³ÆÊäÈë¿ÉÄÜ´æÔÚ´íÎó!");
-    }
-    if (T == 2) //¼ìÑé±ÈÈüµÄÃû³Æ
-    {
-        for (i = 0; program[i][0]; i++)
-        {
-            F = bijiao(b, program[i]);
-            if (F && F % 2)
-                d++;
-        }
-        if (!d)
-            return printf("Ã»ÓĞ·¢ÏÖÏà¹Ø±ÈÈü~ÏîÄ¿Ãû³ÆÊäÈë¿ÉÄÜ´æÔÚ´íÎó!");
+    if (mode == 2) {
+        for (i = 0, hit = 0; PRG[i]; ++i) if (find_sub(s, PRG[i])) hit = 1;
+        if (!hit) { printf("æ²¡æœ‰å‘ç°ç›¸å…³æ¯”èµ›~é¡¹ç›®åç§°è¾“å…¥å¯èƒ½å­˜åœ¨é”™è¯¯!"); return 1; }
     }
     return 0;
 }
- 
-int jianyan2(char b[], int T) //¼ìÑéb[]ÊÇ·ñ·ûºÏÊµ¼Ê
+
+/* è¯»æ–‡ä»¶ï¼›é¦–æ¬¡è¿è¡Œè‡ªåŠ¨åˆ›å»ºç©ºåº“ã€‚è¿”å›é 0 è¡¨ç¤ºå¤±è´¥ */
+static int load(Data *d)
 {
-    int d = 0, i, LEN = -1, F;
-    if (T == 2) //¼ìÑé±ÈÈüµÄÃû³Æ
-    {
-        for (i = 0; program[i][0]; i++)
-        {
-            F = bijiao(b, program[i]);
-            if (F )
-                d++;
-        }
-        if (!d)
-            return printf("Ã»ÓĞ·¢ÏÖÏà¹Ø±ÈÈü~ÏîÄ¿Ãû³ÆÊäÈë¿ÉÄÜ´æÔÚ´íÎó!");
+    fp = fopen(DB, "r");
+    if (!fp) {
+        fp = fopen(DB, "w+");
+        if (!fp) return printf("æ–‡ä»¶è¯»å–å¤±è´¥!\n");
+        fclose(fp);
+        fp = fopen(DB, "r");
+        if (!fp) return printf("æ–‡ä»¶è¯»å–å¤±è´¥!\n");
     }
+    fread(d, sizeof *d, 1, fp);
+    fclose(fp);
+    fp = NULL;
     return 0;
 }
- 
-void record(char school[][NAME], char game[][NAME], int b[], MESSAGE *temp) //¼ÇÂ¼Êı¾İ£»schoolÎªÑ§Ğ£Ãû£¬gameÎªÏîÄ¿Ãû£¬b£¨²Î¿¼½á¹¹ÌåÖĞ¶¨Òå£©£¬tempĞÅÏ¢½á¹¹Ìå
+
+/* å½•å…¥å­¦æ ¡åŠé¡¹ç›® */
+static void record(Data *d)
 {
-    char choose[][13] = {"Â¼ÈëÑ§Ğ£ÊıÄ¿", "×Ü¼ÆÏîÄ¿ÊıÄ¿", "ÄĞ×ÓÏîÄ¿ÊıÄ¿"}; //ÌáÊ¾ÓÃ»§ÊäÈëÄÚÈİ
-    int scope[][3] = {{5, 1, 0}, {NUMU, NUMP, NUMU}};                     //ÊäÈëµÄ¸÷¸öÄÚÈİµÄ·¶Î§
-    int i, j, k, pan, count, choice, man;
-    scope[1][0] = NUMU - b[0]; //Ê£ÓàÂ¼ÈëµÄÑ§Ğ£µÄÊıÁ¿£¨Ö÷ÒªÎªºóĞø¼ÓÈëÊı¾İÉè¼Æ£©
-    scope[1][1] = NUMP - b[1]; //Ê£ÓàÂ¼ÈëµÄÏîÄ¿µÄÊıÁ¿£¨Ö÷ÒªÎªºóĞø¼ÓÈëÊı¾İÉè¼Æ£©
- 
-    if (b[0])
-    {
-        scope[0][0] = scope[0][1] = 0;
-    }//µ±ÓÃ»§ÒÑ¾­½øÈë´Ëº¯ÊıÊäÈë¹ıÒ»´Îºó,¸Ä±äÌõ¼ş½«Ñ§Ğ£¸öÊıÏîÄ¿¸öÊıÏÂÏŞ¸ÄÎª0
- 
-    for (i = 0; i < 3; i++)
-    {
-        printf("\t%s(%d--%d)\n\t:", choose[i], scope[0][i], scope[1][i]);
-        gainint(&b[i], scope[0][i], scope[1][i]);
- 
-        if (i == 1)
-        {
-            scope[1][2] = b[1]; //ÊäÈëÏîÄ¿Íê±Ïºó£¬¸Ä±äÄĞÉúÏîÄ¿µÄ³¤¶È
-            if (!b[0] && !b[1])//ÊäÈëÎªÁãÊ±½øĞĞÏÂÒ»²½
-            {
-                b[2] = b[1];
-                i++;
-            }
+    static const char *tip[] = {"å½•å…¥å­¦æ ¡æ•°ç›®", "æ€»è®¡é¡¹ç›®æ•°ç›®", "ç”·å­é¡¹ç›®æ•°ç›®"};
+    int lo[] = {5, 1, 0}, hi[] = {NUMU, NUMP, NUMU};
+    int i, j, k, bad, cnt, man, dup_rank;
+    hi[0] = NUMU - d->b[0];
+    hi[1] = NUMP - d->b[1];
+    if (d->b[0]) lo[0] = lo[1] = 0;   /* å·²å½•å…¥è¿‡åˆ™ä¸‹é™æ”¹ä¸º 0ï¼Œæ”¯æŒåˆ†æ¬¡å½•å…¥ */
+
+    for (i = 0; i < 3; ++i) {
+        printf("\t%s(%d--%d)\n\t:", tip[i], lo[i], hi[i]);
+        get_int(&d->b[i], lo[i], hi[i]);
+        if (i == 1) {
+            hi[2] = d->b[1];
+            if (!d->b[0] && !d->b[1]) { d->b[2] = d->b[1]; ++i; }
         }
-        if (i == 2)
-        {
-            if (!b[0] || !b[1])
-            {
-                return;
-            }
-            b[3] = b[1] - b[2]; //ÄĞÉúÊäÈëÍê±ÏÊ±£¬Å®ÉúµÄÏîÄ¿=×ÜÏîÄ¿-ÄĞÉúÏîÄ¿
+        if (i == 2) {
+            if (!d->b[0] || !d->b[1]) return;
+            d->b[3] = d->b[1] - d->b[2];   /* å¥³ç”Ÿé¡¹ç›®æ•° = æ€»æ•° - ç”·ç”Ÿæ•° */
         }
     }
-    for (i = NUMU - scope[1][0]; i < b[0] + NUMU - scope[1][0]; i++)
-        do
-        {
+
+    for (i = NUMU - hi[0]; i < d->b[0] + NUMU - hi[0]; ++i) {
+        do {
             k = 0;
-            printf("ÇëÊäÈëµÚ%d¸öÑ§Ğ£µÄÃû³Æ(Ö»Â¼Èë%d-%d×Ö·û):\n", i + 1, 8, NAME);
-            gainchar(school[i], 8, NAME);
-            for (j = 0; j < i; j++)                                               //¶ÔÊäÈëµÄÑ§Ğ£Ãû³Æ½øĞĞ²éÖØ
-                if (bijiao(school[j], school[i]) && bijiao(school[i], school[j])) //Ö®Ç°µÄÑ§Ğ£ºÍµ±Ç°Â¼ÈëµÄÑ§Ğ£ÖØ¸´
-                    k++;
-            if (k)
-                printf("¸ÃÑ§Ğ£ÒÑ¾­Â¼Èë!");
- 
-        } while (jianyan(school[i], 1) || k);
- 
-    b[0] += NUMU - scope[1][0]; //¼ÆËã³öÄ¿Ç°µÄÑ§Ğ£×ÜÊı£¨Ö÷ÒªÎªºóĞø¼ÓÈëÊı¾İÉè¼Æ£©
- 
-    for (i = NUMP - scope[1][1]; i < b[1] + NUMP - scope[1][1]; i++) //Â¼ÈëÏîÄ¿
-    {
-        temp->sex[i] = (b[1] + NUMP - scope[1][1] - i) <= b[3]; //ÅĞ¶ÏĞÔ±ğ,0ÎªÄĞ,1ÎªÅ®£¬ÏÈÊäÈëÄĞ
-        do
-        {
+            printf("è¯·è¾“å…¥ç¬¬%dä¸ªå­¦æ ¡çš„åç§°(åªå½•å…¥%d-%då­—ç¬¦):\n", i + 1, 8, NAME);
+            get_str(d->school[i], 8, NAME);
+            for (j = 0; j < i; ++j)
+                if (find_sub(d->school[j], d->school[i]) && find_sub(d->school[i], d->school[j])) ++k;
+            if (k) printf("è¯¥å­¦æ ¡å·²ç»å½•å…¥!");
+            bad = check(d->school[i], 1);
+        } while (bad || k);
+    }
+    d->b[0] += NUMU - hi[0];
+
+    for (i = NUMP - hi[1]; i < d->b[1] + NUMP - hi[1]; ++i) {
+        man = (d->b[1] + NUMP - hi[1] - i) <= d->b[3];
+        do {
             k = 0;
-            printf("ÇëÊäÈëµÚ%d¸öÏîÄ¿(%s)Ãû³Æ(Ö»Â¼Èë%d-%d×Ö·û):\n", i + 1, sex[temp->sex[i]], 4, NAME); //ÊäÈëÏîÄ¿Ãû³Æ
-            gainchar(game[i], 4, NAME);
-            for (j = 0; j < i; j++)
-                if (bijiao(game[j], game[i]))
-                    k++;
-            if (k)
-                printf("ÏîÄ¿ÒÑÂ¼Èë³É¹¦!");
-            pan = (k || jianyan2(game[i], 2)); //Çø·Ö·ÖÂ¼ÈëÇ°ÈıÃû»¹ÊÇÇ°ÎåÃû
-            if (!pan)                         //µ±ÊäÈëÂú×ãÒªÇóÊ± ¼ÌĞøÑ¯ÎÊÏîÄ¿µÄÂ¼ÈëÃû´Î
-                do
-                {
-                    printf("¸ÃÏîÄ¿Â¼Èë³É¼¨: 3:È¡Ç°Èı  5:È¡Ç°Îå:"); //Ñ¯ÎÊÂ¼ÈëµÄÊ±Ç°¼¸Ãû
-                    gainint(&(temp->junction[i]), 3, 5);           //½«µÚi+1¸öÏîÄ¿µÄ·ÖÊıÇé¿ö·ÅÔÚÍ·½ÚµãµÄjunction[i]Êı×éÀï
-                } while ((temp->junction[i]) == 4);                //Ö»Â¼Èë3ºÍ5
-        } while (pan);                                             //µ±ÊäÈë²»Âú×ãÒªÇóÊ±ÖØĞÂÊäÈë
-        system("cls");
- 
-        for (k = 0; k < b[0]; k++) //Êä³öÑ§Ğ£Ãû³ÆÑ¡Ïî Ã¿Îå¸öÒ»ĞĞ
-            printf("%d:%-13s%c", k + 1, school[k], (k + 1) % H ? ' ' : '\n');
- 
-        printf("\n\n»ñµÃ %s:(%s×Ó)µÄÇ°%dÃû(ÌîÑ§Ğ£Ç°µÄ±àºÅ):\n", game[i], sex[temp->sex[i]], temp->junction[i]);
-        for (j = 0; j < temp->junction[i]; j++) //Ã¿´ÎÂ¼ÈëµÄÏîÄ¿¸öÊı=temp->junction[i]
-        {
-            do
-            {
-                pan = 0;
-                printf("µÚ%dÃû(%d-%d):", j + 1, 1, b[0]);
-                count = gainint(&count, 1, b[0]) - 1; //·¶Î§1-b[0]
-                (temp->count[i][j]) = count;          // temp->count[i][j]ÖĞµÄÊıÖµ¾ÍÊÇµÚi¸öÑ§Ğ£,Ãû´ÎÎªj
-                for (k = 0; k < j; k++)               //¼ìÑéÃû´ÎÊÇ·ñÂ¼ÈëÖØ¸´
-                    if (temp->count[i][k] == count)
-                        pan = printf("Ò»¸öÑ§Ğ£Ö»ÄÜ»ñµÃÒ»¸öÃû´Î!\n");
-            } while (pan);
-            choice = junction[(temp->junction[i]) / 4][j];
-            man = temp->sex[i];
-            (temp->spot + count)->gram[man][i] = choice; //°Ñchoice»ı·Ö´æÈëµÚcount¸öÑ§Ğ£µÄµÚi¸öÏîÄ¿µÄgram[man][i]Àï
-            (temp->spot + count)->gram[2][i] += choice;  //ĞŞ¸ÄµÚcount¸öÑ§Ğ£µÄ¸ÃÏîÄ¿×Ü·Ö
-            (temp->spot + count)->sum[man] += choice;    //ĞŞ¸ÄµÚcount¸öÑ§Ğ£µÄÄĞÅ®ÍÅÌå×Ü»ı·Ö
-            (temp->spot + count)->sum[2] += choice;      //ĞŞ¸ÄÑ§Ğ£µÄ×Ü»ı·Ö
+            printf("è¯·è¾“å…¥ç¬¬%dä¸ªé¡¹ç›®(%s)åç§°(åªå½•å…¥%d-%då­—ç¬¦):\n", i + 1, SEX[man], 4, NAME);
+            get_str(d->game[i], 4, NAME);
+            for (j = 0; j < i; ++j) if (find_sub(d->game[j], d->game[i])) ++k;
+            if (k) printf("é¡¹ç›®å·²å½•å…¥æˆåŠŸ!");
+            bad = k || check(d->game[i], 2);
+            if (!bad)
+                do {
+                    printf("è¯¥é¡¹ç›®å½•å…¥æˆç»©: 3:å–å‰ä¸‰  5:å–å‰äº”:");
+                    get_int(&d->junction[i], 3, 5);
+                } while (d->junction[i] == 4);
+        } while (bad);
+        CLS();
+
+        for (k = 0; k < d->b[0]; ++k)
+            printf("%d:%-13s%c", k + 1, d->school[k], (k + 1) % H ? ' ' : '\n');
+        printf("\n\nè·å¾— %s:(%så­)çš„å‰%då(å¡«å­¦æ ¡å‰çš„ç¼–å·):\n",
+               d->game[i], SEX[man], d->junction[i]);
+        for (j = 0; j < d->junction[i]; ++j) {
+            do {
+                dup_rank = 0;
+                printf("ç¬¬%då(%d-%d):", j + 1, 1, d->b[0]);
+                get_int(&cnt, 1, d->b[0]);
+                --cnt;
+                d->count[i][j] = cnt;
+                for (k = 0; k < j; ++k)
+                    if (d->count[i][k] == cnt)
+                        dup_rank = printf("ä¸€ä¸ªå­¦æ ¡åªèƒ½è·å¾—ä¸€ä¸ªåæ¬¡!\n");
+            } while (dup_rank);
+            man = d->sex[i];
+            d->spot[cnt].gram[man][i]   = SC[d->junction[i] / 4][j];
+            d->spot[cnt].gram[2][i]    += SC[d->junction[i] / 4][j];
+            d->spot[cnt].sum[man]      += SC[d->junction[i] / 4][j];
+            d->spot[cnt].sum[2]        += SC[d->junction[i] / 4][j];
         }
     }
-    b[1] += NUMP - scope[1][1]; //ĞŞ¸ÄÂ¼ÈëµÄÏîÄ¿µÄ×ÜÊıÁ¿£¨Ö÷ÒªÎªºóĞø¼ÓÈëÊı¾İÉè¼Æ£©
+    d->b[1] += NUMP - hi[1];
 }
- 
-void paixu(MESSAGE *temp, int select,FILE *fp) //Ñ¡ÔñÅÅĞò
+
+/* æ’åè¾“å‡ºï¼šsel 0=ç”·å­ 1=å¥³å­ 2=å­¦æ ¡ */
+static void do_rank(Data *d, int sel)
 {
-    int i, j, k, m, a, b, n, school[2][NUMU] = {0};
-    n = temp->b[0];
-    printf("ÉıĞòÇë°´0 ½µĞòÇë°´1:");
-    gainint(&b, 0, 1);
-    for (i = 0; i < n; i++)
-    {
-        school[1][i] = i; //¼ÇÂ¼Ñ§Ğ£µ±Ç°µÄÎ»ÖÃ±àºÅ
-        school[0][i] = (temp->spot + i)->sum[select];
-    }
-    printf("%sÅÅÃûÈçÏÂ\t£¨ÒÔµÚ%dÁĞ·ÖÊıÎª×¼£©:\n\n", fenlei[select], select + 1);
-    fprintf(fp,"%sÅÅÃûÈçÏÂ\t£¨ÒÔµÚ%dÁĞ·ÖÊıÎª×¼£©:\n\n", fenlei[select], select + 1);
-    for (i = 0; i < n - 1; i++)
-    {
+    int i, j, k, b, a, n = d->b[0], val[NUMU] = {0}, idx[NUMU] = {0};
+    printf("å‡åºè¯·æŒ‰0 é™åºè¯·æŒ‰1:");
+    get_int(&b, 0, 1);
+    for (i = 0; i < n; ++i) { idx[i] = i; val[i] = d->spot[i].sum[sel]; }
+    OUT("%sæ’åå¦‚ä¸‹\tï¼ˆä»¥ç¬¬%dåˆ—åˆ†æ•°ä¸ºå‡†ï¼‰:\n\n", CAT[sel], sel + 1);
+
+    for (i = 0; i < n - 1; ++i) {           /* é€‰æ‹©æ’åºï¼Œé™åº/å‡åº */
         k = i;
-        for (j = i + 1; j < n; j++)
-        {
-            if (b && school[0][j] > school[0][k])
-                k = j;
- 
-            else if (!b && school[0][j] < school[0][k])
-                k = j;
+        for (j = i + 1; j < n; ++j)
+            if (b ? val[j] > val[k] : val[j] < val[k]) k = j;
+        if (k != i) {
+            a = val[i]; val[i] = val[k]; val[k] = a;
+            a = idx[i]; idx[i] = idx[k]; idx[k] = a;
         }
- 
-        if (k != i)
-            for (m = 0; m < 2; m++)
-            {
-                a = school[m][k];
-                school[m][k] = school[m][i];
-                school[m][i] = a;
-            }
     }
-    printf("Ãû´Î: Ñ§Ğ£Ãû³Æ   ÄĞ×Ó   Å®×Ó   Ñ§Ğ£×Ü·Ö\n");
-    fprintf(fp,"Ãû´Î: Ñ§Ğ£Ãû³Æ   ÄĞ×Ó   Å®×Ó   Ñ§Ğ£×Ü·Ö\n");
-    for (i = 0; i < n; i++)
-    {
-        k = (b ? i + 1 : n - i); //¼ÆËãÅÅÃûµÄÃû´ÎÏÔÊ¾·½Ïò
-        j = school[1][i];        // ¼ÇÂ¼Ñ§Ğ£µÄ±àºÅ
-        printf("µÚ%02d:%-13s%02d·Ö\t%02d·Ö\t%02d·Ö\n", k, temp->xuexiao[j], (temp->spot + j)->sum[0], (temp->spot + j)->sum[1], (temp->spot + j)->sum[2]);
-        fprintf(fp,"µÚ%02d:%-13s%02d·Ö\t%02d·Ö\t%02d·Ö\n", k, temp->xuexiao[j], (temp->spot + j)->sum[0], (temp->spot + j)->sum[1], (temp->spot + j)->sum[2]);
+    OUT("åæ¬¡: å­¦æ ¡åç§°   ç”·å­   å¥³å­   å­¦æ ¡æ€»åˆ†\n");
+    for (i = 0; i < n; ++i) {
+        k = b ? i + 1 : n - i;
+        j = idx[i];
+        OUT("ç¬¬%02d:%-13s%02dåˆ†\t%02dåˆ†\t%02dåˆ†\n", k, d->school[j],
+            d->spot[j].sum[0], d->spot[j].sum[1], d->spot[j].sum[2]);
     }
 }
- 
-int xianshi()
+
+/* æŸ¥è¯¢æŸå­¦æ ¡(idx)å„é¡¹ç›®å¾—åˆ† */
+static void query(const Data *d, int idx)
+{
+    int i, j, k, now, next = 0;
+    while (next < d->b[1]) {
+        now = next;
+        next = (next + H < d->b[1]) ? next + H : d->b[1];
+        for (i = now; i < next; ++i)
+            OUT("(%s-%d)%-8s ", SEX[d->sex[i]], d->junction[i], d->game[i]);
+        OUT("\n");
+        for (j = 0; j < 3; ++j) {
+            OUT("%-s:  ", CAT[j]);
+            for (k = now; k < next; ++k)
+                if (j == d->sex[k] || j == 2)
+                    OUT("%02dåˆ†    \t", d->spot[idx].gram[j][k]);
+                else
+                    OUT("******  \t");
+            OUT("\n");
+        }
+        OUT("\n");
+    }
+}
+
+/* æ˜¾ç¤ºå„é¡¹ç›®åæ¬¡ */
+static void list_events(const Data *d)
+{
+    int i, j;
+    for (i = 0; i < d->b[1]; ++i) {
+        OUT("\t\tç¬¬%dä¸ªæ¯”èµ›é¡¹ç›®: %-13s<%så­> åªå½•å…¥å‰%då\n",
+            i + 1, d->game[i], SEX[d->sex[i]], d->junction[i]);
+        for (j = 0; j < d->junction[i]; ++j)
+            OUT("\tç¬¬%då:%-13s%02dåˆ†", j + 1, d->school[d->count[i][j]],
+                SC[d->junction[i] / 4][j]);
+        OUT("\n\n");
+    }
+}
+
+static int menu(void)
 {
     int a;
-    system("mode con cols=130 lines=30"); //¿ØÖÆÌ¨ ¿í¶È130 ¸ß¶È30
-    printf("\t\t\t\tÔË¶¯»á·ÖÊıÍ³¼Æ\n");
+    system("mode con cols=130 lines=30");
+    printf("\t\t\t\tè¿åŠ¨ä¼šåˆ†æ•°ç»Ÿè®¡\n");
     printf("* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *\n");
-    printf("\t*    ¹¦     ÄÜ    ±í                 »ı   ·Ö   ¹æ   Ôò\n");
-    printf("\t* 1.Ìí¼ÓÑ§Ğ£¼°ÏîÄ¿                  *È¡Ç°ÈıÃû(1,2,3)\n");
-    printf("\t* 2.°´ÄĞ×ÓÍÅÌå×Ü·ÖÅÅĞòÊä³ö           *»ı·Ö·Ö±ğÎª--5,3,2\n");
-    printf("\t* 3.°´Å®×ÓÍÅÌå×Ü·ÖÅÅĞòÊä³ö         \n");
-    printf("\t* 4.°´Ñ§Ğ£×Ü·ÖÅÅĞòÊä³ö               *È¡Ç°ÎåÃû(1,2,3,4,5)\n");
-    printf("\t* 5.°´±àºÅ»òÃû³Æ²éÑ¯Ñ§Ğ£Çé¿ö         *»ı·Ö·Ö±ğÎª--7,5,3,2,1\n");
-    printf("\t* 6.ÏÔÊ¾±ÈÈüÏîÄ¿¸÷Ñ§Ğ£Ãû´ÎÇé¿ö       \n");
-    printf("\t* 7.¶ÁÈ¡ÎÄ¼ş                    \n");
-    printf("\t* 8.±£´æĞÅÏ¢²¢ÍË³ö                   \n");
-    printf("\t* 9.Çå¿Õ²¢»Ö¸´³õÊ¼»¯½çÃæ             \n");
+    printf("\t*    åŠŸ     èƒ½    è¡¨                 ç§¯   åˆ†   è§„   åˆ™\n");
+    printf("\t* 1.æ·»åŠ å­¦æ ¡åŠé¡¹ç›®                  *å–å‰ä¸‰å(1,2,3)\n");
+    printf("\t* 2.æŒ‰ç”·å­å›¢ä½“æ€»åˆ†æ’åºè¾“å‡º           *ç§¯åˆ†åˆ†åˆ«ä¸º--5,3,2\n");
+    printf("\t* 3.æŒ‰å¥³å­å›¢ä½“æ€»åˆ†æ’åºè¾“å‡º         \n");
+    printf("\t* 4.æŒ‰å­¦æ ¡æ€»åˆ†æ’åºè¾“å‡º               *å–å‰äº”å(1,2,3,4,5)\n");
+    printf("\t* 5.æŒ‰ç¼–å·æˆ–åç§°æŸ¥è¯¢å­¦æ ¡æƒ…å†µ         *ç§¯åˆ†åˆ†åˆ«ä¸º--7,5,3,2,1\n");
+    printf("\t* 6.æ˜¾ç¤ºæ¯”èµ›é¡¹ç›®å„å­¦æ ¡åæ¬¡æƒ…å†µ       \n");
+    printf("\t* 7.è¯»å–æ–‡ä»¶                    \n");
+    printf("\t* 8.ä¿å­˜ä¿¡æ¯å¹¶é€€å‡º                   \n");
+    printf("\t* 9.æ¸…ç©ºå¹¶æ¢å¤åˆå§‹åŒ–ç•Œé¢             \n");
     printf("\n");
-    printf("\t*×¢Òâ£ºÒ»¸öºº×ÖÕ¼Á½¸ö×Ö·û£¡£¡£¡\n");
-    printf("\t*×¢Òâ£º¹¦ÄÜ1¿É·Ö¶à´ÎÑ¡Ôñ£¡£¡£¡\n");
-    printf("\t*×¢Òâ£ºÂ¼ÈëÏîÄ¿Ê±Ä¬ÈÏÏÈÄĞºóÅ®£¡£¡£¡\n");
-    printf("\t*×¢Òâ£º³õ´ÎÊ¹ÓÃÇëÏÈÊ¹ÓÃ¹¦ÄÜ1Â¼ÈëÊı¾İ£¡£¡£¡\n");
+    printf("\t*æ³¨æ„ï¼šä¸€ä¸ªæ±‰å­—å ä¸¤ä¸ªå­—ç¬¦ï¼ï¼ï¼\n");
+    printf("\t*æ³¨æ„ï¼šåŠŸèƒ½1å¯åˆ†å¤šæ¬¡é€‰æ‹©ï¼ï¼ï¼\n");
+    printf("\t*æ³¨æ„ï¼šå½•å…¥é¡¹ç›®æ—¶é»˜è®¤å…ˆç”·åå¥³ï¼ï¼ï¼\n");
+    printf("\t*æ³¨æ„ï¼šåˆæ¬¡ä½¿ç”¨è¯·å…ˆä½¿ç”¨åŠŸèƒ½1å½•å…¥æ•°æ®ï¼ï¼ï¼\n");
     printf("* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *\n\t");
-    printf("ÇëÊäÈëÄúµÄÑ¡Ôñ(1-9):");
-    return gainint(&a, 1, 9);
+    printf("è¯·è¾“å…¥æ‚¨çš„é€‰æ‹©(1-9):");
+    return get_int(&a, 1, 9);
+}
+
+int main(void)
+{
+    Data d = {0};
+    int sel, choice, i;
+    if (load(&d)) { printf("è¯·æŒ‰ä»»æ„é”®è¿›è¡Œä¸‹ä¸€æ­¥\n"); PAUSE(); }
+
+    do {
+        CLS();
+        sel = menu();
+        fp = NULL;
+        if (sel == 1) {
+            record(&d);
+        } else if (d.b[0]) {
+            if (sel >= 2 && sel <= 6) fp = fopen(DB, "a+");
+            if (sel >= 2 && sel <= 4) {
+                do_rank(&d, sel - 2);
+            } else if (sel == 5) {
+                for (i = 0; i < d.b[0]; ++i)
+                    printf("%d:%-13s%c", i + 1, d.school[i], (i + 1) % H ? ' ' : '\n');
+                printf("\nè¾“å…¥å­¦æ ¡å‰çš„ç¼–å·[1,%d]:", d.b[0]);
+                get_int(&choice, 1, d.b[0]);
+                query(&d, choice - 1);
+            } else if (sel == 6) {
+                list_events(&d);
+            } else if (sel == 7) {
+                system(DB);
+            } else if (sel == 9) {
+                printf("ç¡®è®¤æ¸…ç©ºè¯·æŒ‰1 å¦åˆ™è¯·æŒ‰0:");
+                if (get_int(&choice, 0, 1)) {
+                    memset(d.spot, 0, sizeof d.spot);
+                    d.b[0] = d.b[1] = d.b[2] = 0;
+                }
+                load(&d);                /* ä¿æŒåŸé€»è¾‘ï¼šæ¸…ç©ºåä»æ–‡ä»¶é‡æ–°è½½å…¥ */
+            }
+            if (fp) { fclose(fp); fp = NULL; }
+        }
+        printf("\nè¯·æŒ‰ä»»æ„é”®ç»§ç»­â€¦\n");
+        PAUSE();
+    } while (sel != 8);
+    return 0;
 }
